@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>红绿灯</title>
+  <style>
+    div {
+      background-color: grey;
+      display: inline-block;
+      margin: 30px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50px;
+    }
+
+    .green.light {
+      background-color: green;
+    }
+
+    .yellow.light {
+      background-color: yellow;
+    }
+
+    .red.light {
+      background-color: red;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="green"></div>
+  <div class="yellow"></div>
+  <div class="red"></div>
+  <script>
+    function green() {
+      var lights = document.getElementsByTagName('div');
+      for (var i = 0; i < 3; i++) {
+        lights[i].classList.remove('light')
+      }
+      document.getElementsByClassName('green')[0].classList.add('light');
+    }
+
+    function yellow() {
+      var lights = document.getElementsByTagName('div');
+      for (var i = 0; i < 3; i++) {
+        lights[i].classList.remove('light')
+      }
+      document.getElementsByClassName('yellow')[0].classList.add('light');
+    }
+
+    function red() {
+      var lights = document.getElementsByTagName('div');
+      for (var i = 0; i < 3; i++) {
+        lights[i].classList.remove('light')
+        document.getElementsByClassName('red')[0].classList.add('light');
+      }
+    }
+
+    function sleep(t) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, t);
+      })
+    }
+
+    // 绿灯亮10s, 黄灯亮2s, 红灯亮5s, 如此循环
+    // promise -> 链式调用 代替 回调地狱方式
+    function go() {
+      green();
+      sleep(10000).then(() => {
+        yellow();
+        return sleep(2000);
+      }).then(() => {
+        red();
+        return sleep(5000)
+      }).then(go)
+    }
+
+    go();
+  </script>
+</body>
+
+</html>
