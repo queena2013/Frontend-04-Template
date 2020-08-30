@@ -23,11 +23,11 @@
 <body>
   <div id="board"></div>
   <Script>
-    // 二维数组表示棋盘
+    // 一维数组表示棋盘，x轴变成3的倍数的余数，y轴变成3的倍数
     let pattern = [
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0]
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0
     ];
 
     let color = 1;
@@ -41,25 +41,36 @@
         for (let j = 0; j < 3; j++) {
           let cell = document.createElement('div');
           cell.classList.add('cell');
-          cell.innerText = pattern[i][j] === 2 ? "X" :
-            pattern[i][j] === 1 ? 'O' : '';
-          cell.addEventListener('click', () => move(j, i));
+          cell.innerText = pattern[i * 3 + j] === 2 ? "X" :
+            pattern[i * 3 + j] === 1 ? 'O' : '';
+          cell.addEventListener('click', () => userMove(j, i));
           board.appendChild(cell);
         }
         board.appendChild(document.createElement('br'));
       }
     }
 
-    function move(x, y) {
-      pattern[y][x] = color;
+    function userMove(x, y) {
+      pattern[y * 3 + x] = color;
       if (check(pattern, color)) {
         alert(color === 2 ? 'X is winner!' : 'O is winner!');
       }
       color = 3 - color;
+      console.log(bestChoice(pattern, color));
       show();
-      if (willWin(pattern, color)) {
-        console.log(color === 2 ? 'X will win !' : 'O will win !');
+      computerMove();
+    }
+
+    function computerMove() {
+      let choice = bestChoice(pattern, color);
+      if (choice.point) {
+        pattern[choice.point[1]*3 + choice.point[0]] = color;
       }
+      if(check(pattern, color)) {
+        alert(color === 2 ? 'X is winner' : 'O is winner');
+      }
+      color = 3 - color;
+      show();
     }
 
     function check(pattern, color) {
@@ -67,7 +78,7 @@
       for (let i = 0; i < 3; i++) {
         let win = true;
         for (let j = 0; j < 3; j++) {
-          if (pattern[i][j] !== color) {
+          if (pattern[i * 3 + j] !== color) {
             win = false;
           }
         }
@@ -79,7 +90,7 @@
       for (let i = 0; i < 3; i++) {
         let win = true;
         for (let j = 0; j < 3; j++) {
-          if (pattern[j][i] !== color) {
+          if (pattern[j * 3 + i] !== color) {
             win = false;
           }
         }
@@ -87,11 +98,11 @@
           return true;
         }
       }
-      // 斜向判断: /
+      // 斜向判断: / ， 横纵坐标加起来等于2
       {
         let win = true;
         for (let j = 0; j < 3; j++) {
-          if (pattern[j][2 - j] !== color) {
+          if (pattern[j * 3 + 2 - j] !== color) {
             win = false;
           }
         }
@@ -99,11 +110,11 @@
           return true;
         }
       }
-      // 斜向判断: \
+      // 斜向判断: \ , 横纵坐标一样
       {
         let win = true;
         for (let j = 0; j < 3; j++) {
-          if (pattern[j][j] !== color) {
+          if (pattern[j * 3 + j] !== color) {
             win = false;
           }
         }
@@ -114,26 +125,64 @@
       return false;
     }
 
+    // 复制一维数组
+    // Object.create(pattern) 创建了一个新对象，并且以原有的patter为原型，继承了原有pattern的方法和数据 
     function clone(pattern) {
-      return JSON.parse(JSON.stringify(pattern));
+      return Object.create(pattern);
     }
 
     function willWin(pattern, color) {
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           // 如果位置不空就跳过
-          if (pattern[i][j]) {
+          if (pattern[i * 3 + j]) {
             continue;
           }
           // 如果位置空了就clone一个新的pattern
           let tmp = clone(pattern);
-          tmp[i][j] = color;
+          tmp[i * 3 + j] = color;
           if (check(tmp, color)) {
-            return true;
+            return [j, i];
           }
         }
       }
-      return false;
+      return null;
+    }
+
+    // result: 1胜 0平 -1败
+    function bestChoice(pattern, color) {
+      let point = willWin(pattern, color);
+      if (point) {
+        return {
+          point,
+          result: 1
+        }
+      }
+
+      let result = -1;
+      outer: for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (pattern[i * 3 + j]) {
+            continue;
+          }
+          let tmp = clone(pattern);
+          tmp[i * 3 + j] = color;
+          let opp = bestChoice(tmp, 3 - color);
+          if (-opp.result >= result) {
+            point = [j, i];
+            result = -opp.result;
+          }
+          // 加上减枝逻辑， 如果赢了就退出循环
+          if (result === 1) {
+            // break掉2层循环，所以外面加个label, break到outer的label上
+            break outer;
+          }
+        }
+      }
+      return {
+        point,
+        result: point ? result : 0
+      }
     }
 
     show(pattern);
