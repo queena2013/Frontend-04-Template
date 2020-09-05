@@ -70,6 +70,41 @@
     document.addEventListener("mouseup", () => mousedown = false);
     // 禁止右键弹出菜单
     document.addEventListener("contextmenu", e => e.preventDefault());
+
+    function path(map, start, end) {
+      // 用数组的push 和shift结合，表示队列, 先进先， 广度优先搜素
+      // 如果用push 和pop, 队列queue变成栈stack, 先进后出, 深度优先搜素
+      var queue = [start];
+
+      function insert(x, y) {
+        // 边缘点
+        if (x < 0 || x >= 100 || y < 0 || y >= 100) {
+          return;
+        }
+        // 已经有墙的点1 或曾经搜索过的点2
+        if (map[100 * y + x]) {
+          return;
+        }
+        // 用2 作为标记 可以走的点
+        map[100 * y + x] = 2;
+        queue.push([x, y]);
+      }
+
+      while (queue.length) {
+        let [x, y] = queue.shift();
+        console.log(x, y);
+        if (x === end[0] && y === end[1]) {
+          return true;
+        }
+        // 塞入前后左右4个点
+        insert(x - 1, y);
+        insert(x, y - 1);
+        insert(x + 1, y);
+        insert(x, y + 1);
+      }
+    }
+
+    path(map, [0, 0], [5, 5]);
   </script>
 </body>
 
