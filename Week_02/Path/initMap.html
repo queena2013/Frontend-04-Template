@@ -28,6 +28,7 @@
   <div id="container"></div>
   <button onclick="localStorage['map'] = JSON.stringify(map); location.reload();">save</button>
   <button onclick="localStorage.removeItem('map'); location.reload();">clear</button>
+
   <script>
     let initMap = Array(10000).fill(0);
     let map = localStorage['map'] ? JSON.parse(localStorage['map']) : initMap;
@@ -37,7 +38,7 @@
         let cell = document.createElement('div');
         cell.classList.add('cell');
 
-        if (map[100 * y + x] === 1) {
+        if (map[y * 100 + x] === 1) {
           cell.style.backgroundColor = 'black';
         }
 
@@ -46,10 +47,10 @@
           if (mousedown) {
             if (clear) {
               cell.style.backgroundColor = "";
-              map[100 * y + x] = 0;
+              map[y * 100 + x] = 0;
             } else {
               cell.style.backgroundColor = 'black';
-              map[100 * y + x] = 1;
+              map[y * 100 + x] = 1;
             }
           }
         });
@@ -71,40 +72,64 @@
     // 禁止右键弹出菜单
     document.addEventListener("contextmenu", e => e.preventDefault());
 
-    function path(map, start, end) {
+    function sleep(t) {
+      return new Promise(function (resolve) {
+        setTimeout(resolve, t)
+      })
+    }
+
+    async function findPath(map, start, end) {
+      let table = Object.create(map);
       // 用数组的push 和shift结合，表示队列, 先进先， 广度优先搜素
       // 如果用push 和pop, 队列queue变成栈stack, 先进后出, 深度优先搜素
       var queue = [start];
 
-      function insert(x, y) {
+      async function insert(x, y, pre) {
         // 边缘点
         if (x < 0 || x >= 100 || y < 0 || y >= 100) {
           return;
         }
         // 已经有墙的点1 或曾经搜索过的点2
-        if (map[100 * y + x]) {
+        if (table[y * 100 + x]) {
           return;
         }
-        // 用2 作为标记 可以走的点
-        map[100 * y + x] = 2;
+
+        // await sleep(1)
+        container.children[y * 100 + x].style.backgroundColor = 'lightgreen';
+        table[y * 100 + x] = pre;
         queue.push([x, y]);
       }
 
       while (queue.length) {
         let [x, y] = queue.shift();
-        console.log(x, y);
         if (x === end[0] && y === end[1]) {
-          return true;
+          // 一旦找到end节点，就从end节点去找他的pre,一直找到起始节点
+          let path = [];
+
+          while (x !== start[0] || y !== start[1]) {
+            path.push(map[y * 100 + x]);
+            [x, y] = table[y * 100 + x];
+            await sleep(30);
+            container.children[y * 100 + x].style.backgroundColor = 'purple';
+          }
+
+          return path;
         }
         // 塞入前后左右4个点
-        insert(x - 1, y);
-        insert(x, y - 1);
-        insert(x + 1, y);
-        insert(x, y + 1);
+        await insert(x - 1, y, [x, y]);
+        await insert(x, y - 1, [x, y]);
+        await insert(x + 1, y, [x, y]);
+        await insert(x, y + 1), [x, y];
+
+        // 塞入斜向4个点
+        await insert(x - 1, y - 1, [x, y]);
+        await insert(x + 1, y - 1, [x, y]);
+        await insert(x + 1, y + 1, [x, y]);
+        await insert(x - 1, y + 1), [x, y];
       }
     }
 
-    path(map, [0, 0], [5, 5]);
+    findPath(map, [0, 0], [50, 50]);
   </script>
 </body>
 
