@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>寻路算法01_绘制一个地图</title>
+  <title>寻路算法02_启发式搜索A*</title>
   <style>
     #container {
       width: 701px;
@@ -30,6 +30,46 @@
   <button onclick="localStorage.removeItem('map'); location.reload();">clear</button>
 
   <script>
+    class Sorted {
+      constructor(data, compare) {
+        // 浅拷贝
+        this.data = data.slice();
+        this.compare = compare || ((a, b) => a - b);
+      }
+      take() {
+        if (!this.data.length) { return; }
+        let min = this.data[0];
+        let minIndex = 0;
+
+        for (let i = 1; i < this.data.length; i++) {
+          if (this.compare(this.data[i], min) < 0) {
+            min = this.data[i];
+            minIndex = i;
+          }
+        }
+
+        // 删除最小元素，和最后一个元素交换位置，然后pop()掉
+        this.data[minIndex] = this.data[this.data.length - 1];
+        this.data.pop();
+        return min;
+      }
+      give(v) {
+        this.data.push(v);
+      }
+      get length() {
+        return this.data.length;
+      }
+    }
+
+    // let s = new Sorted([7, 3, 9, 6, 5, 4, 8, 0, 2]);
+    // console.log(s.take());
+    // console.log(s.take());
+    // console.log(s.take());
+    // console.log(s.take());
+    // console.log(s.take());
+    // console.log(s.take());
+    // console.log(s.take());
+
     let initMap = Array(10000).fill(0);
     let map = localStorage['map'] ? JSON.parse(localStorage['map']) : initMap;
     let container = document.getElementById('container');
@@ -64,7 +104,6 @@
     let clear = false;
 
     document.addEventListener("mousedown", e => {
-      console.log('e.which', e.which);
       mousedown = true;
       clear = (e.which === 3)
     });
@@ -78,11 +117,11 @@
       })
     }
 
+
+
     async function findPath(map, start, end) {
       let table = Object.create(map);
-      // 用数组的push 和shift结合，表示队列, 先进先， 广度优先搜素
-      // 如果用push 和pop, 队列queue变成栈stack, 先进后出, 深度优先搜素
-      var queue = [start];
+      let queue = new Sorted([start], (a, b) => distance(a) - distance(b));
 
       async function insert(x, y, pre) {
         // 边缘点
@@ -93,15 +132,17 @@
         if (table[y * 100 + x]) {
           return;
         }
-
-        // await sleep(1)
         container.children[y * 100 + x].style.backgroundColor = 'lightgreen';
         table[y * 100 + x] = pre;
-        queue.push([x, y]);
+        queue.give([x, y]);
+      }
+
+      function distance(point) {
+        return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
       }
 
       while (queue.length) {
-        let [x, y] = queue.shift();
+        let [x, y] = queue.take();
         if (x === end[0] && y === end[1]) {
           // 一旦找到end节点，就从end节点去找他的pre,一直找到起始节点
           let path = [];
@@ -109,7 +150,6 @@
           while (x !== start[0] || y !== start[1]) {
             path.push(map[y * 100 + x]);
             [x, y] = table[y * 100 + x];
-            await sleep(30);
             container.children[y * 100 + x].style.backgroundColor = 'purple';
           }
 
@@ -119,13 +159,13 @@
         await insert(x - 1, y, [x, y]);
         await insert(x, y - 1, [x, y]);
         await insert(x + 1, y, [x, y]);
-        await insert(x, y + 1), [x, y];
+        await insert(x, y + 1, [x, y]);
 
         // 塞入斜向4个点
         await insert(x - 1, y - 1, [x, y]);
         await insert(x + 1, y - 1, [x, y]);
         await insert(x + 1, y + 1, [x, y]);
-        await insert(x - 1, y + 1), [x, y];
+        await insert(x - 1, y + 1, [x, y]);
       }
     }
 

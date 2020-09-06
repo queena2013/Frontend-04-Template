@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>寻路算法03_启发式搜索A*——二叉堆</title>
+  <style>
+    #container {
+      width: 701px;
+      font-size: 0;
+    }
+
+    .cell {
+      display: inline-block;
+      line-height: 7px;
+      width: 6px;
+      height: 6px;
+      background-color: gray;
+      border-bottom: 1px solid white;
+      border-right: 1px solid white;
+      vertical-align: top;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+  <button onclick="localStorage['map'] = JSON.stringify(map); location.reload();">save</button>
+  <button onclick="localStorage.removeItem('map'); location.reload();">clear</button>
+
+  <script>
+    // undo
+    class BinaryHeap {
+      constructor(data, compare) {
+        // 浅拷贝
+        this.data = data;
+        this.compare = compare;
+      }
+      take() {
+        if (!this.data.length) { return; }
+        let min = this.data[0];
+        let i = 0;
+        // fix heap
+        while (i < this.data.length) {
+          if (i * 2 + 1 >= this.data.length) {
+            this.data[i] = this.data[i * 2 + 1];
+            i = i * 2 + 1;
+            break;
+          }
+          if (this.compare(this.data[i * 2 + 1], this.data[i * 2 + 2]) < 0) {
+            this.data[i] = this.data[i * 2 + 1];
+            i = i * 2 + 1;
+          } else {
+            this.data[i] = this.data[i * 2 + 2];
+            i = i * 2 + 2;
+          }
+        }
+
+        if (i < this.data.length - 1) {
+          this.insertAt(i, this.data.pop());
+        } else {
+          this.data.pop();
+        }
+        return min;
+      }
+      insertAt(i, v) {
+        this.data[i] = v;
+        while (i > 0 && this.compare(v, this.data[Math.floor((i - 1) / 2)]) < 0) {
+          this.data[i] = this.data[Math.floor((i - 1) / 2)];
+          this.data[Math.floor((i - 1) / 2)] = v;
+          i = Math.floor((i - 1) / 2);
+        }
+      }
+      insert(v) {
+        this.insertAt(this.data.length, v);
+      }
+      get length() {
+        return this.data.length;
+      }
+    }
+
+    let s = new BinaryHeap([7, 3, 9, 6, 5, 4, 8, 0, 2], (a, b) => a - b);
+    console.log(s.take());
+    console.log(s.take());
+    console.log(s.take());
+    console.log(s.take());
+    console.log(s.take());
+    console.log(s.take());
+    console.log(s.take());
+
+    let initMap = Array(10000).fill(0);
+    let map = localStorage['map'] ? JSON.parse(localStorage['map']) : initMap;
+    let container = document.getElementById('container');
+    for (let y = 0; y < 100; y++) {
+      for (let x = 0; x < 100; x++) {
+        let cell = document.createElement('div');
+        cell.classList.add('cell');
+
+        if (map[y * 100 + x] === 1) {
+          cell.style.backgroundColor = 'black';
+        }
+
+        cell.addEventListener("mousemove", () => {
+          // 鼠标摁下的移动
+          if (mousedown) {
+            if (clear) {
+              cell.style.backgroundColor = "";
+              map[y * 100 + x] = 0;
+            } else {
+              cell.style.backgroundColor = 'black';
+              map[y * 100 + x] = 1;
+            }
+          }
+        });
+        container.appendChild(cell);
+      }
+    }
+
+    // 左键建墙
+    let mousedown = false;
+    // 右键清楚
+    let clear = false;
+
+    document.addEventListener("mousedown", e => {
+      mousedown = true;
+      clear = (e.which === 3)
+    });
+    document.addEventListener("mouseup", () => mousedown = false);
+    // 禁止右键弹出菜单
+    document.addEventListener("contextmenu", e => e.preventDefault());
+
+    function sleep(t) {
+      return new Promise(function (resolve) {
+        setTimeout(resolve, t)
+      })
+    }
+
+
+
+    async function findPath(map, start, end) {
+      let table = Object.create(map);
+      let queue = new BinaryHeap([start], (a, b) => distance(a) - distance(b));
+
+      async function insert(x, y, pre) {
+        // 边缘点
+        if (x < 0 || x >= 100 || y < 0 || y >= 100) {
+          return;
+        }
+        // 已经有墙的点1 或曾经搜索过的点2
+        if (table[y * 100 + x]) {
+          return;
+        }
+        container.children[y * 100 + x].style.backgroundColor = 'lightgreen';
+        table[y * 100 + x] = pre;
+        queue.insert([x, y]);
+      }
+
+      function distance(point) {
+        return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+      }
+
+      while (queue.length) {
+        let [x, y] = queue.take();
+        if (x === end[0] && y === end[1]) {
+          // 一旦找到end节点，就从end节点去找他的pre,一直找到起始节点
+          let path = [];
+
+          while (x !== start[0] || y !== start[1]) {
+            path.push(map[y * 100 + x]);
+            [x, y] = table[y * 100 + x];
+            container.children[y * 100 + x].style.backgroundColor = 'purple';
+          }
+
+          return path;
+        }
+        // 塞入前后左右4个点
+        await insert(x - 1, y, [x, y]);
+        await insert(x, y - 1, [x, y]);
+        await insert(x + 1, y, [x, y]);
+        await insert(x, y + 1, [x, y]);
+
+        // 塞入斜向4个点
+        await insert(x - 1, y - 1, [x, y]);
+        await insert(x + 1, y - 1, [x, y]);
+        await insert(x + 1, y + 1, [x, y]);
+        await insert(x - 1, y + 1, [x, y]);
+      }
+    }
+
+    findPath(map, [0, 0], [50, 50]);
+  </script>
+</body>
+
+</html>
