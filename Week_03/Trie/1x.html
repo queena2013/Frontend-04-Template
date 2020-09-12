@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>字典书01_trie</title>
+</head>
+
+<body>
+  <script>
+    // $表示字符串结尾 利用Symbol不可重复的特点，让截止符的代码更加严谨一点
+    let $ = Symbol('$');
+    class Trie {
+      constructor() {
+        // 用一个对象 作为 字典树 的节点
+        this.root = Object.create(null);
+      }
+      // insert方法 把一个字符串插进字典树里面
+      insert(word) {
+        let node = this.root;
+        for (let c of word) {
+          if (!node[c]) {
+            node[c] = Object.create(null);
+          }
+          node = node[c];
+        }
+        if (!($ in node)) {
+          node[$] = 0;
+        }
+        node[$]++;
+      }
+      // most方法遍历整个树，得到出现次数最多的字符maxWord及数量max
+      most() {
+        let max = 0;
+        let maxWord = null;
+        let visit = (node, word) => {
+          // node[$] 表示单词的截止点
+          if (node[$] && node[$] > max) {
+            max = node[$];
+            maxWord = word;
+          }
+          for (let p in node) {
+            visit(node[p], word + p);
+          }
+        }
+        visit(this.root, "");
+        console.log(maxWord, max);
+      }
+    }
+
+    // 产生随机length长度的单词
+    function randomWord(length) {
+      var s = '';
+      for (let i = 0; i < length; i++) {
+        s += String.fromCharCode(Math.random() * 26 + 'a'.charCodeAt(0));
+      }
+      return s;
+    }
+
+    // 1. 创建一个字典树
+    let trie = new Trie();
+
+    // 2. 给这个字典树插入 10万个空的字符（随机创建的单词）
+    for (let i = 0; i < 100000; i++) {
+      trie.insert(randomWord(4));
+    }
+
+    // 3.运行
+    console.log(trie);
+
+    // 4.运行，得到出现次数最多的字符及数量
+    console.log(trie.most());
+  </script>
+</body>
+
+</html>
