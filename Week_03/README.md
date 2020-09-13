@@ -10,3 +10,5 @@
 
 
 # Object.create(null) 来创建字符串，这样避免受到Object.prototype上面的原型上的污染
+
+# 正则的exec
