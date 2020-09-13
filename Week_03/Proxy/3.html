@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proxy</title>
+</head>
+
+<body>
+  <script>
+    let callbacks = [];
+
+    let object = {
+      a: 1,
+      b: 2
+    };
+
+    // po 对 object的代理， 代理
+    let po = relative(object);
+
+    // 监听po上的属性 —— 仿vue的监听
+    effect(() => {
+      console.log(po.a);
+    })
+
+    function effect(callback) {
+      callbacks.push(callback);
+    }
+
+    function relative(object) {
+      return new Proxy(object, {
+        set(obj, prop, val) {
+          obj[prop] = val;
+          for (let callback of callbacks) {
+            callback();
+          }
+          return obj[prop];
+        },
+        get(obj, prop) {
+          console.log(obj, prop);
+          return obj[prop];
+        },
+      });
+    }
+
+    po.a = 3;
+  </script>
+</body>
+
+</html>

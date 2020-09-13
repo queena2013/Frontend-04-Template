@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proxy</title>
+</head>
+
+<body>
+  <script>
+    let object = {
+      a: 1,
+      b: 2
+    };
+
+    // proxy的作用 1.设置起来像普通对象一样 2.能够被监听
+    let po = new Proxy(object, {
+      set(obj, prop, val) {
+        console.log(obj, prop, val);
+      }
+    });
+
+    // 运行
+    po.a = 3;
+    po.x = 5;
+  </script>
+</body>
+
+</html>
